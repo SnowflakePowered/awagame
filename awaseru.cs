@@ -14,11 +14,11 @@ namespace awagame
     public class awaseru
     {
         
-        public static void BuildCurrentDirectory()
+        public static void BuildCurrentDirectorySqlite(string fileName)
         {
             string directory = Environment.CurrentDirectory;
             var combine = new awaseru(directory);
-           
+            awaseru.BuildDatabase(fileName, combine.GameEntries);
         }
         
         string CurrentDirectory;
@@ -27,6 +27,7 @@ namespace awagame
         IList<Entry> GameEntries;
         SQLiteConnection Database;
 
+        HashSet<Entry> GameEntries;
         private awaseru(string directory)
         {
             this.CurrentDirectory = directory;
@@ -58,6 +59,70 @@ namespace awagame
             return gameEntries;
         }
 
+        async static void BuildDatabase(string fileName, IEnumerable<Entry> entries)
+        {
+            try
+            {
+                File.Delete(fileName);
+            }
+            catch (IOException)
+            {
 
+            }
+            finally
+            {
+                SQLiteConnection.CreateFile(fileName);
+            }
+            SQLiteConnection database = new SQLiteConnection("Data Source=:memory:;Version=3;"); //use a memory database for speed purposes
+            SQLiteConnection disk = new SQLiteConnection("Data Source="+fileName+";Version=3;");
+
+            database.Open();
+            using(var sqlCommand = new SQLiteCommand(@"CREATE TABLE IF NOT EXISTS roms(
+                                                                gamename TEXT,
+                                                                romname TEXT,
+                                                                size TEXT,
+                                                                crc TEXT,
+                                                                md5 TEXT,
+                                                                sha1 TEXT PRIMARY KEY,
+                                                                romID TEXT
+                                                                )", database))
+            {
+                sqlCommand.ExecuteNonQuery();
+            }
+            foreach (Entry gameEntry in entries)
+            {
+                using (var sqlCommand = new SQLiteCommand(@"INSERT OR IGNORE INTO roms VALUES(
+                                              @gamename,
+                                              @romname,
+                                              @size,
+                                              @crc,
+                                              @md5,
+                                              @sha1,
+                                              @romID)", database))
+                {
+                    sqlCommand.Parameters.AddWithValue("@gamename", gameEntry.GameName);
+                    sqlCommand.Parameters.AddWithValue("@romname", gameEntry.RomFileName);
+                    sqlCommand.Parameters.AddWithValue("@size", gameEntry.RomSize);
+                    sqlCommand.Parameters.AddWithValue("@crc", gameEntry.HashCRC32);
+                    sqlCommand.Parameters.AddWithValue("@md5", gameEntry.HashMD5);
+                    sqlCommand.Parameters.AddWithValue("@sha1", gameEntry.HashSHA1);
+                    sqlCommand.Parameters.AddWithValue("@romID", gameEntry.OpenVGDB_RomID);
+
+                    await sqlCommand.ExecuteNonQueryAsync();
+                    if (Program.Verbose)
+                    {
+                        await Console.Out.WriteLineAsync(String.Format("[INFO] Added ROM record {0} with game record {1} (SHA {2})",
+                        gameEntry.RomFileName, gameEntry.GameName, gameEntry.HashSHA1));
+                    }
+                }
+            }
+            disk.Open();
+            Console.WriteLine("Saving Database.");
+            database.BackupDatabase(disk, "main", "main", -1, null, 0);
+            Console.WriteLine("Save complete.");
+            disk.Close();
+            database.Close();
+
+        }
     }
 }
