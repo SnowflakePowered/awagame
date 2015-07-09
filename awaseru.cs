@@ -93,7 +93,7 @@ namespace awagame
                 })).GroupBy(entry => entry.HashSHA1).Select(x => x.First()); //dedupe to save on time
                 foreach (Entry gameEntry in entries)
                 {
-                    if (sha1s.ContainsValue(gameEntry.HashSHA1))
+                    if (sha1s.ContainsKey(gameEntry.HashSHA1))
                     {
                         gameEntry.OpenVGDB_RomID = sha1s[gameEntry.HashSHA1];
                         if (Program.Verbose)
