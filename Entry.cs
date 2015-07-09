@@ -13,13 +13,18 @@ namespace awagame
     {
         [ProtoMember(1)]
         public string GameName { get; set; }
+        [ProtoMember(2)]
         public string RomFileName { get; set; }
-        public string RomLanguage { get; set; }
-        public string OpenVGDB_RomID { get; set; }
+        [ProtoMember(3)]
         public string RomSize { get; set; }
+        [ProtoMember(4)]
         public string HashCRC32 { get; set; }
+        [ProtoMember(5)]
         public string HashMD5 { get; set; }
+        [ProtoMember(6)]
         public string HashSHA1 { get; set; }
+        [ProtoMember(7)]
+        public string OpenVGDB_RomID { get; set; }
 
     }
 }
