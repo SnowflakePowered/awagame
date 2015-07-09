@@ -5,6 +5,7 @@ awagame is a small and fast utility to merge together [logiqx ROM Datafiles](www
 
 awagame supports matching against [OpenVGDB](https://github.com/OpenVGDB/OpenVGDB)'s database. The `romID` field will be populated according to the supplied `openvgdb.sqlite`, where you can query against OpenVGDB.
 
+Licensed under the MIT License.
 Usage
 -------
 
