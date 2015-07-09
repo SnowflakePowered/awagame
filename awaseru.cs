@@ -14,7 +14,7 @@ namespace awagame
 {
     public class awaseru
     {
-        
+
         public static void BuildCurrentDirectorySqlite(string fileName)
         {
             string directory = Environment.CurrentDirectory;
@@ -49,7 +49,7 @@ namespace awagame
                     Trace.WriteLine("[WARN] Could not load " + Path.GetFileName(datFile));
                 }
             }
-            Trace.WriteLineIf(Program.OpenVGDB,"[INFO] Checking all records against OpenVGDB, this will take a while.");
+            Trace.WriteLineIf(Program.OpenVGDB, "[INFO] Checking all records against OpenVGDB, this will take a while.");
             this.GameEntries = new HashSet<Entry>(this.DatFiles.SelectMany(datFile => awaseru.GetEntries(datFile)).OrderBy(entry => entry.GameName));
         }
 
@@ -72,8 +72,16 @@ namespace awagame
             {
                 SQLiteConnection openvgdb = new SQLiteConnection("Data Source=openvgdb.sqlite;Version=3;"); //Load in openvgdb
                 openvgdb.Open();
-
-
+                IDictionary<string, string> sha1s = new Dictionary<string, string>(); //load sha1s from openvgdb
+                using (SQLiteCommand cmd = new SQLiteCommand(@"select `romHashSHA1`, `romID` from `ROMs`", openvgdb))
+                {
+                    SQLiteDataReader r = cmd.ExecuteReader();
+                    while (r.Read())
+                    {
+                        sha1s[Convert.ToString(r["romHashSHA1"])] = Convert.ToString(r["romID"]);
+                    }
+                }
+                openvgdb.Close();
                 var entries = _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
                 {
                     GameName = (string)game.Attribute("name"),
@@ -82,31 +90,27 @@ namespace awagame
                     HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
                     HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
                     HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
-                }));
+                })).GroupBy(entry => entry.HashSHA1).Select(x => x.First()); //dedupe to save on time
                 foreach (Entry gameEntry in entries)
                 {
-                    using (var sqlCommand = new SQLiteCommand(@"select `romId` from `ROMs` where `romHashSHA1` = @sha1", openvgdb))
+                    if (sha1s.ContainsValue(gameEntry.HashSHA1))
                     {
-                        sqlCommand.Parameters.AddWithValue("@sha1", gameEntry.HashSHA1);
-                        var romid = sqlCommand.ExecuteScalar();
-                        if (romid != null)
+                        gameEntry.OpenVGDB_RomID = sha1s[gameEntry.HashSHA1];
+                        if (Program.Verbose)
                         {
-                            gameEntry.OpenVGDB_RomID = Convert.ToString(romid);
-                            if (Program.Verbose)
-                            {
-                                Console.WriteLine("[INFO] Matched OpenVGDB ROM ID " + romid);
-                            }
+                            Console.WriteLine("[INFO] OpenVGDB: Matched ROM ID " + sha1s[gameEntry.HashSHA1]);
                         }
-                        else
+
+                    }
+                    else
+                    {
+                        if (Program.Verbose)
                         {
-                            if (Program.Verbose)
-                            {
-                                Console.WriteLine("[INFO] Failed to find match for SHA1 " + gameEntry.HashSHA1);
-                            }
+                            Console.WriteLine("[INFO] OpenVGDB: Unable to match " + gameEntry.HashSHA1);
                         }
                     }
+
                 }
-                openvgdb.Close();
                 return entries;
             }
         }
@@ -126,10 +130,10 @@ namespace awagame
                 SQLiteConnection.CreateFile(fileName);
             }
             SQLiteConnection database = new SQLiteConnection("Data Source=:memory:;Version=3;"); //use a memory database for speed purposes
-            SQLiteConnection disk = new SQLiteConnection("Data Source="+fileName+";Version=3;");
+            SQLiteConnection disk = new SQLiteConnection("Data Source=" + fileName + ";Version=3;");
 
             database.Open();
-            using(var sqlCommand = new SQLiteCommand(@"CREATE TABLE IF NOT EXISTS roms(
+            using (var sqlCommand = new SQLiteCommand(@"CREATE TABLE IF NOT EXISTS roms(
                                                                 gamename TEXT,
                                                                 romname TEXT,
                                                                 size TEXT,
