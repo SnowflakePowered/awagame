@@ -120,6 +120,14 @@ namespace awagame
         {
             try
             {
+                ResourceExtractor.ExtractResourceToFile("awagame.sqlite.dll", "SQLite.Interop.dll");
+            }
+            catch
+            {
+                Console.WriteLine("[ERROR] Can not write SQLite library.");
+            }
+            try
+            {
                 File.Delete(fileName);
             }
             catch (IOException)
