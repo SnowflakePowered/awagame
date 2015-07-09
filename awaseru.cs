@@ -20,7 +20,13 @@ namespace awagame
             var combine = new awaseru(directory);
             awaseru.BuildDatabase(fileName, combine.GameEntries);
         }
-        
+        public static void BuildCurrentDirectoryJson(string fileName)
+        {
+            string directory = Environment.CurrentDirectory;
+            var combine = new awaseru(directory);
+            awaseru.BuildJson(fileName, combine.GameEntries);
+        }
+
         string CurrentDirectory;
         IList<string> DatFilesPath;
         IList<XDocument> DatFiles;
@@ -122,6 +128,22 @@ namespace awagame
             Console.WriteLine("Save complete.");
             disk.Close();
             database.Close();
+
+        }
+
+        static void BuildJson(string fileName, IEnumerable<Entry> entries)
+        {
+            try
+            {
+                File.Delete(fileName);
+            }
+            catch (IOException)
+            {
+
+            }
+            Console.WriteLine("Saving JSON.");
+            File.WriteAllText(fileName, JsonConvert.SerializeObject(entries.ToDictionary(entry => entry.HashSHA1)));
+            Console.WriteLine("Save complete.");
 
         }
     }
