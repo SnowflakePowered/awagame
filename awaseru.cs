@@ -9,6 +9,7 @@ using System.IO;
 using System.Data.SQLite;
 using System.Net;
 using System.Diagnostics;
+using Newtonsoft.Json;
 namespace awagame
 {
     public class awaseru
@@ -30,9 +31,6 @@ namespace awagame
         string CurrentDirectory;
         IList<string> DatFilesPath;
         IList<XDocument> DatFiles;
-        IList<Entry> GameEntries;
-        SQLiteConnection Database;
-
         HashSet<Entry> GameEntries;
         private awaseru(string directory)
         {
@@ -41,28 +39,76 @@ namespace awagame
             this.DatFiles = new List<XDocument>();
             foreach (string datFile in this.DatFilesPath)
             {
-                this.DatFiles.Add(XDocument.Load(File.OpenRead(datFile)));
-                Trace.WriteLine("[INFO] Loaded DAT file " + Path.GetFileName(datFile));
-            
+                try
+                {
+                    this.DatFiles.Add(XDocument.Load(File.OpenRead(datFile)));
+                    Trace.WriteLine("[INFO] Loaded DAT file " + Path.GetFileName(datFile));
+                }
+                catch (XmlException)
+                {
+                    Trace.WriteLine("[WARN] Could not load " + Path.GetFileName(datFile));
+                }
             }
-            this.GameEntries = this.DatFiles.SelectMany(datFile => GetEntries(datFile)).ToList();
-            Console.WriteLine();
+            Trace.WriteLineIf(Program.OpenVGDB,"[INFO] Checking all records against OpenVGDB, this will take a while.");
+            this.GameEntries = new HashSet<Entry>(this.DatFiles.SelectMany(datFile => awaseru.GetEntries(datFile)).OrderBy(entry => entry.GameName));
         }
 
-        IList<Entry> GetEntries(XDocument xmlDat)
+        static IEnumerable<Entry> GetEntries(XDocument xmlDat)
         {
-            IList<Entry> gameEntries = new List<Entry>();
             var _entries = xmlDat.Root.Elements("game");
-            gameEntries = _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
+            if (!Program.OpenVGDB)
+            {
+                return _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
+                    {
+                        GameName = (string)game.Attribute("name"),
+                        RomFileName = (string)rom.Attribute("name"),
+                        RomSize = (string)rom.Attribute("size"),
+                        HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
+                        HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
+                        HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
+                    }));
+            }
+            else
+            {
+                SQLiteConnection openvgdb = new SQLiteConnection("Data Source=openvgdb.sqlite;Version=3;"); //Load in openvgdb
+                openvgdb.Open();
+
+
+                var entries = _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
                 {
                     GameName = (string)game.Attribute("name"),
                     RomFileName = (string)rom.Attribute("name"),
                     RomSize = (string)rom.Attribute("size"),
-                    HashCRC32 = (string)rom.Attribute("crc"),
-                    HashMD5 = (string)rom.Attribute("md5"),
-                    HashSHA1 = (string)rom.Attribute("sha1")
-                })).ToList();
-            return gameEntries;
+                    HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
+                    HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
+                    HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
+                }));
+                foreach (Entry gameEntry in entries)
+                {
+                    using (var sqlCommand = new SQLiteCommand(@"select `romId` from `ROMs` where `romHashSHA1` = @sha1", openvgdb))
+                    {
+                        sqlCommand.Parameters.AddWithValue("@sha1", gameEntry.HashSHA1);
+                        var romid = sqlCommand.ExecuteScalar();
+                        if (romid != null)
+                        {
+                            gameEntry.OpenVGDB_RomID = Convert.ToString(romid);
+                            if (Program.Verbose)
+                            {
+                                Console.WriteLine("[INFO] Matched OpenVGDB ROM ID " + romid);
+                            }
+                        }
+                        else
+                        {
+                            if (Program.Verbose)
+                            {
+                                Console.WriteLine("[INFO] Failed to find match for SHA1 " + gameEntry.HashSHA1);
+                            }
+                        }
+                    }
+                }
+                openvgdb.Close();
+                return entries;
+            }
         }
 
         async static void BuildDatabase(string fileName, IEnumerable<Entry> entries)
