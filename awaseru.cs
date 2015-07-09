@@ -72,13 +72,13 @@ namespace awagame
             {
                 SQLiteConnection openvgdb = new SQLiteConnection("Data Source=openvgdb.sqlite;Version=3;"); //Load in openvgdb
                 openvgdb.Open();
-                IDictionary<string, string> sha1s = new Dictionary<string, string>(); //load sha1s from openvgdb
+                IDictionary<string, string> romids = new Dictionary<string, string>(); //load sha1s from openvgdb
                 using (SQLiteCommand cmd = new SQLiteCommand(@"select `romHashSHA1`, `romID` from `ROMs`", openvgdb))
                 {
                     SQLiteDataReader r = cmd.ExecuteReader();
                     while (r.Read())
                     {
-                        sha1s[Convert.ToString(r["romHashSHA1"])] = Convert.ToString(r["romID"]);
+                        romids[Convert.ToString(r["romHashSHA1"])] = Convert.ToString(r["romID"]);
                     }
                 }
                 openvgdb.Close();
@@ -90,15 +90,16 @@ namespace awagame
                     HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
                     HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
                     HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
-                })).GroupBy(entry => entry.HashSHA1).Select(x => x.First()); //dedupe to save on time
+                })).GroupBy(entry => entry.HashSHA1).Select(x => x.First()).ToArray(); //dedupe to save on time
+  
                 foreach (Entry gameEntry in entries)
                 {
-                    if (sha1s.ContainsKey(gameEntry.HashSHA1))
+                    if (romids.ContainsKey(gameEntry.HashSHA1))
                     {
-                        gameEntry.OpenVGDB_RomID = sha1s[gameEntry.HashSHA1];
+                        gameEntry.OpenVGDB_RomID = romids[gameEntry.HashSHA1];
                         if (Program.Verbose)
                         {
-                            Console.WriteLine("[INFO] OpenVGDB: Matched ROM ID " + sha1s[gameEntry.HashSHA1]);
+                            Console.WriteLine("[INFO] OpenVGDB: Matched ROM ID " + gameEntry.OpenVGDB_RomID);
                         }
 
                     }
