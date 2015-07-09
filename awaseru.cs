@@ -174,9 +174,16 @@ namespace awagame
                 }
             }
             disk.Open();
-            Console.WriteLine("Saving Database.");
-            database.BackupDatabase(disk, "main", "main", -1, null, 0);
-            Console.WriteLine("Save complete.");
+            Console.WriteLine("[INFO] Saving Database to " + fileName);
+            try
+            {
+                database.BackupDatabase(disk, "main", "main", -1, null, 0);
+            }
+            catch
+            {
+                Console.WriteLine("[ERROR] Could not save SQLite file (File in use?).");
+            }
+            Console.WriteLine("Saved to " + fileName);
             disk.Close();
             database.Close();
 
@@ -192,9 +199,16 @@ namespace awagame
             {
 
             }
-            Console.WriteLine("Saving JSON.");
-            File.WriteAllText(fileName, JsonConvert.SerializeObject(entries.ToDictionary(entry => entry.HashSHA1)));
-            Console.WriteLine("Save complete.");
+            Console.WriteLine("[INFO] Saving JSON to " + fileName);
+            try
+            {
+                File.WriteAllText(fileName, JsonConvert.SerializeObject(entries.ToDictionary(entry => entry.HashSHA1)));
+            }
+            catch 
+            {
+                Console.WriteLine("[ERROR] Could not save JSON file (File in use?).");
+            }
+            Console.WriteLine("[INFO] Saved JSON to " + fileName);
 
         }
     }
