@@ -25,6 +25,20 @@ Check each record to see if it has a romID in OpenVGDB. If it does, it will be r
 
 Output to a JSON file rather than an SQLite database. The resulting JSON object has the same schema as the SQLite table, but the records are keyed on the game's SHA1 hash.
 
+###Downloader Usage
+awagame can be used to download DAT files from online sources. Use only one parameter at a time.
+
+###--download-redump
+
+Downloads all DAT files from redump.org
+
+###--download-tosec
+
+Downloads the latest TOSEC DAT package from tosecdev.com. This is a rather large file so please wait a bit while it downloads.
+
+###---download-nointro
+
+Downloads all Parent/Clone XML DAT files from datomatic.nointro.org. Due to No Intro throttling after too many downloads, using this option will take a very long time.
 Schema
 ---------
 

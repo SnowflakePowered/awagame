@@ -17,6 +17,9 @@ namespace awagame
         public async static Task DownloadNoIntro()
         {
 
+            Console.WriteLine("[WARN] No-Intro download will take a long time and may not work due to throttling");
+            Console.WriteLine("[WARN] It is probably better to manually download from datomatic.no-intro.org");
+
             var nointroList = download.GetNoIntroSystems();
             foreach(string system in nointroList)
             {
@@ -63,13 +66,15 @@ namespace awagame
         {
             if (delay > 0)
             {
-                Console.WriteLine("Must wait " + (delay / 1000 / 60).ToString() + " minutes due to throttling.");
+                Console.WriteLine("[WARN] Must wait " + (delay / 1000 / 60).ToString() + " minutes due to throttling.");
                 await Task.Delay(delay);
             }
+            Console.WriteLine("[INFO] Downloading " + sel_s.Replace('+', ' '));
             var cookies = new CookieContainer();
             var client = new RestClient("http://datomatic.no-intro.org/?page=download&fun=xml"); //Download the P/Clone
             client.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.132 Safari/537.36";
             client.CookieContainer = cookies; //DAT-o-MATIC relies on cookies
+            Console.WriteLine("[INFO] Waiting 1 minute to avoid throttling");
             await Task.Delay(60000);
             await client.ExecuteGetTaskAsync(new RestRequest()); //Save the session cookie
             var setSystemRequest = new RestRequest(Method.POST);
@@ -78,6 +83,7 @@ namespace awagame
             setSystemRequest.AddHeader("Referer", "http://datomatic.no-intro.org/index.php?page=download");
             setSystemRequest.AddHeader("Host", "datomatic.no-intro.org");
             setSystemRequest.AddHeader("Cache-Control", "max-age=0");
+            Console.WriteLine("[INFO] Waiting 1 minute to avoid throttling");
             await Task.Delay(60000);
             await client.ExecutePostTaskAsync(setSystemRequest); //POST the system.
            
@@ -87,7 +93,8 @@ namespace awagame
             downloadRequest.AddHeader("Referer", "http://datomatic.no-intro.org/index.php?page=download");
             downloadRequest.AddHeader("Host", "datomatic.no-intro.org");
             downloadRequest.AddHeader("Cache-Control", "max-age=0");
-            Console.WriteLine("[INFO] Downloading " + sel_s.Replace('+', ' '));
+            Console.WriteLine("[INFO] Waiting 1 minute to avoid throttling");
+
             await Task.Delay(60000);
             var response = await client.ExecuteTaskAsync(downloadRequest); //POST the download request
             if (response.ResponseUri.OriginalString.StartsWith("http://datomatic.no-intro.org/index.php?page=message"))
@@ -98,6 +105,17 @@ namespace awagame
             else
             {
                 File.WriteAllBytes(sel_s.Replace('+', ' ') + ".zip", response.RawBytes);
+                using (var package = new ZipArchive(new MemoryStream(response.RawBytes)))
+                {
+                    foreach (var entry in package.Entries)
+                    {
+                        if (Path.GetExtension(entry.FullName) == ".dat")
+                        {
+                            entry.ExtractToFile("nointro_" + entry.Name, true);
+                        }
+                    }
+                }
+                Console.WriteLine("[INFO] Download Complete");
             }
             
         }

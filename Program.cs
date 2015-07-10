@@ -27,17 +27,17 @@ namespace awagame
                 Console.WriteLine("Downloader Usage: awagame --download-tosec --download-redump --download-openvgdb --download-nointro");
                 return;
             }
-            if (args.Contains("--download-nointro"))
+            if (args[0].StartsWith("--download-nointro"))
             {
                 Task.WaitAll(download.DownloadNoIntro());
                 return;
             }
-            if (args.Contains("--download-tosec"))
+            if (args[0].StartsWith("--download-tosec"))
             {
                 Task.WaitAll(download.DownloadTOSEC());
                 return;
             }
-            if (args.Contains("--download-redump"))
+            if (args[0].StartsWith("--download-redump"))
             {
                 Task.WaitAll(download.DownloadRedump());
                 return;
