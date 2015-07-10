@@ -57,12 +57,46 @@ namespace awagame
         {
             var _entries = xmlDat.Root.Elements("game");
             var datHeader = xmlDat.Root.Elements("header");
-            var datName = datHeader.Elements("name").First().Value;
-            var datUrl = datHeader.Elements("url").First().Value;
-            var datDate = datHeader.Elements("date").First().Value;
+
+            string datDate;
+            string datName;
+            string datUrl;
+            try
+            {
+                datName = datHeader.Elements("name").First().Value;
+            }
+            catch
+            {
+                datName = null;
+            }
+            try
+            {
+                datDate = datHeader.Elements("date").First().Value;
+            }
+            catch
+            {
+                try
+                {
+                    datDate = datHeader.Elements("version").First().Value;
+                }
+                catch
+                {
+                    datDate = null; //If date is neither in version or date, it's null
+                }
+            }
+            try
+            {
+               datUrl = datHeader.Elements("url").First().Value;
+            }
+            catch
+            {
+                datUrl = null;
+            }
             if (!Program.OpenVGDB)
             {
-                return _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
+                return _entries.SelectMany(game => game.Elements("rom")
+                    .Where(rom => rom.Attribute("size").Value != "0")
+                    .Select(rom => new Entry()
                     {
                         GameName = (string)game.Attribute("name"),
                         RomFileName = (string)rom.Attribute("name"),

@@ -11,6 +11,7 @@ namespace awagame
     {
         internal static bool Verbose = false;
         internal static bool OpenVGDB = false;
+ 
         static void Main(string[] args)
         {
             ConsoleTraceListener ctl = new ConsoleTraceListener(false);
@@ -23,9 +24,29 @@ namespace awagame
                 Console.WriteLine("Start it in a folder full of XML ROM Datafiles!");
                 Console.WriteLine("awagame does not save any platform information.");
                 Console.WriteLine("Usage: awagame --output=filename|-o=filename [--help|-H] [--openvgdb] [--json]");
+                Console.WriteLine("Downloader Usage: awagame --download-tosec --download-redump --download-openvgdb --download-nointro");
                 return;
             }
-           
+            if (args.Contains("--download-nointro"))
+            {
+                Task.WaitAll(download.DownloadNoIntro());
+                return;
+            }
+            if (args.Contains("--download-tosec"))
+            {
+                Task.WaitAll(download.DownloadTOSEC());
+                return;
+            }
+            if (args.Contains("--download-redump"))
+            {
+                Task.WaitAll(download.DownloadRedump());
+                return;
+            }
+            if (args.Contains("--download-openvgdb"))
+            {
+                Task.WaitAll(download.DownloadOpenVGDB());
+                return;
+            }
             if (!(args[0].StartsWith("--output=") || args[0].StartsWith("-o=")))
             {
                 Console.WriteLine("You must specify output filename");

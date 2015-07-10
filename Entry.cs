@@ -16,6 +16,8 @@ namespace awagame
         public string HashMD5 { get; set; }
         public string HashSHA1 { get; set; }
         public string OpenVGDB_RomID { get; set; }
-
+        public string DatName { get; set; }
+        public string DatSource { get; set; }
+        public string DatDate { get; set; }
     }
 }
