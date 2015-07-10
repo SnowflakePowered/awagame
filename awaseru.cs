@@ -111,6 +111,14 @@ namespace awagame
             }
             else
             {
+                try
+                {
+                    ResourceExtractor.ExtractResourceToFile("awagame.sqlite.dll", "SQLite.Interop.dll");
+                }
+                catch
+                {
+                    Console.WriteLine("[ERROR] Can not write SQLite library.");
+                }
                 SQLiteConnection openvgdb = new SQLiteConnection("Data Source=openvgdb.sqlite;Version=3;"); //Load in openvgdb
                 openvgdb.Open();
                 IDictionary<string, string> romids = new Dictionary<string, string>(); //load sha1s from openvgdb
