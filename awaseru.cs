@@ -56,6 +56,10 @@ namespace awagame
         static IEnumerable<Entry> GetEntries(XDocument xmlDat)
         {
             var _entries = xmlDat.Root.Elements("game");
+            var datHeader = xmlDat.Root.Elements("header");
+            var datName = datHeader.Elements("name").First().Value;
+            var datUrl = datHeader.Elements("url").First().Value;
+            var datDate = datHeader.Elements("date").First().Value;
             if (!Program.OpenVGDB)
             {
                 return _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
@@ -65,7 +69,10 @@ namespace awagame
                         RomSize = (string)rom.Attribute("size"),
                         HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
                         HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
-                        HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
+                        HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant(),
+                        DatDate = (string)datDate,
+                        DatSource = (string)datUrl,
+                        DatName = (string)datName
                     }));
             }
             else
@@ -89,7 +96,10 @@ namespace awagame
                     RomSize = (string)rom.Attribute("size"),
                     HashCRC32 = ((string)rom.Attribute("crc")).ToUpperInvariant(),
                     HashMD5 = ((string)rom.Attribute("md5")).ToUpperInvariant(),
-                    HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant()
+                    HashSHA1 = ((string)rom.Attribute("sha1")).ToUpperInvariant(),
+                    DatDate = (string)datDate,
+                    DatSource = (string)datUrl,
+                    DatName = (string)datName
                 })).GroupBy(entry => entry.HashSHA1).Select(x => x.First()).ToArray(); //dedupe to save on time
   
                 foreach (Entry gameEntry in entries)
@@ -149,7 +159,10 @@ namespace awagame
                                                                 crc TEXT,
                                                                 md5 TEXT,
                                                                 sha1 TEXT PRIMARY KEY,
-                                                                romID TEXT
+                                                                romID TEXT,
+                                                                datName TEXT,
+                                                                datSource TEXT,
+                                                                datDate TEXT
                                                                 )", database))
             {
                 sqlCommand.ExecuteNonQuery();
@@ -163,7 +176,10 @@ namespace awagame
                                               @crc,
                                               @md5,
                                               @sha1,
-                                              @romID)", database))
+                                              @romID,
+                                              @datName,
+                                              @datSource,
+                                              @datDate)", database))
                 {
                     sqlCommand.Parameters.AddWithValue("@gamename", gameEntry.GameName);
                     sqlCommand.Parameters.AddWithValue("@romname", gameEntry.RomFileName);
@@ -172,6 +188,9 @@ namespace awagame
                     sqlCommand.Parameters.AddWithValue("@md5", gameEntry.HashMD5);
                     sqlCommand.Parameters.AddWithValue("@sha1", gameEntry.HashSHA1);
                     sqlCommand.Parameters.AddWithValue("@romID", gameEntry.OpenVGDB_RomID);
+                    sqlCommand.Parameters.AddWithValue("@datName", gameEntry.DatName);
+                    sqlCommand.Parameters.AddWithValue("@datSource", gameEntry.DatSource);
+                    sqlCommand.Parameters.AddWithValue("@datDate", gameEntry.DatDate);
 
                     await sqlCommand.ExecuteNonQueryAsync();
                     if (Program.Verbose)
