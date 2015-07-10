@@ -123,7 +123,9 @@ namespace awagame
                     }
                 }
                 openvgdb.Close();
-                var entries = _entries.SelectMany(game => game.Elements("rom").Select(rom => new Entry()
+                var entries = _entries.SelectMany(game => game.Elements("rom")
+                .Where(rom => rom.Attribute("size").Value != "0")
+                .Select(rom => new Entry()
                 {
                     GameName = (string)game.Attribute("name"),
                     RomFileName = (string)rom.Attribute("name"),

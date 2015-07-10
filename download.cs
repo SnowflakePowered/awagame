@@ -68,20 +68,32 @@ namespace awagame
             }
             var cookies = new CookieContainer();
             var client = new RestClient("http://datomatic.no-intro.org/?page=download&fun=xml"); //Download the P/Clone
+            client.UserAgent = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/43.0.2357.132 Safari/537.36";
             client.CookieContainer = cookies; //DAT-o-MATIC relies on cookies
+            await Task.Delay(60000);
             await client.ExecuteGetTaskAsync(new RestRequest()); //Save the session cookie
             var setSystemRequest = new RestRequest(Method.POST);
             setSystemRequest.AddParameter("application/x-www-form-urlencoded", "sel_s="+sel_s, ParameterType.RequestBody);
+            setSystemRequest.AddHeader("DNT", "1");
+            setSystemRequest.AddHeader("Referer", "http://datomatic.no-intro.org/index.php?page=download");
+            setSystemRequest.AddHeader("Host", "datomatic.no-intro.org");
+            setSystemRequest.AddHeader("Cache-Control", "max-age=0");
+            await Task.Delay(60000);
             await client.ExecutePostTaskAsync(setSystemRequest); //POST the system.
+           
             var downloadRequest = new RestRequest(Method.POST);
             downloadRequest.AddParameter("application/x-www-form-urlencoded", "Download=Download", ParameterType.RequestBody);
-
+            downloadRequest.AddHeader("DNT", "1");
+            downloadRequest.AddHeader("Referer", "http://datomatic.no-intro.org/index.php?page=download");
+            downloadRequest.AddHeader("Host", "datomatic.no-intro.org");
+            downloadRequest.AddHeader("Cache-Control", "max-age=0");
             Console.WriteLine("[INFO] Downloading " + sel_s.Replace('+', ' '));
+            await Task.Delay(60000);
             var response = await client.ExecuteTaskAsync(downloadRequest); //POST the download request
             if (response.ResponseUri.OriginalString.StartsWith("http://datomatic.no-intro.org/index.php?page=message"))
             {
                 Console.WriteLine("[WARN] Throttle detected, must wait 5 minutes before retrying");
-                await download.DownloadNoIntroDat(sel_s, delay + 360000);
+                await download.DownloadNoIntroDat(sel_s, delay + 600000);
             }
             else
             {
