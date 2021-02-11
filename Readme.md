@@ -1,6 +1,12 @@
 合わゲーム — awagame
 ================
 
+🚨 **Deprecated** 🚨
+
+Consider using [shiratsu](https://github.com/SnowflakePowered/shiratsu) or the [shiragame 2.0](https://github.com/SnowflakePowered/shiragame) database directly instead.
+
+---
+
 awagame is a small and fast utility to merge together [logiqx ROM Datafiles](www.logiqx.com/Dats/datafile.dtd) into a single queryable SQLite Database or JSON file. Supports No-Intro Parent/Clone XMLs, TOSEC and redump dats.
 
 awagame supports matching against [OpenVGDB](https://github.com/OpenVGDB/OpenVGDB)'s database. The `romID` field will be populated according to the supplied `openvgdb.sqlite`, where you can query against OpenVGDB.
